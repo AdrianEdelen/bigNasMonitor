@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <title>bigNAS Info</title>
+</head>
+
+<!-- I think ALL of the data can be gotten from the netdata API. Which should make this very simple with a single
+entry point -->
+
+<body>
+    <div class="container-fluid">
+        <div class="row border border-secondary rounded">
+            <div id="hostname" class="col">hostname</div> <!-- Configurable can also be hidden to make room for more disks-->
+            <div class="col">Online</div> <!-- Configurable for text or just an Icon-->
+            <div class="col">Disk Health 0 0 0 0 0 0 </div> <!-- This will probably generate a column for each disk-->
+            <div class="col">U:999.99mb/s D:999.99mb/s</div> <!-- MB or mbits-->
+        </div>
+        <div class="row border border-secondary">
+            <div class="col border border-secondary">
+                <div class="row border">Disk Stats</div>
+                <!-- Generated from disks in unraid -->
+                <div class="row">Disk 1 40c R:99.99 W:99.99</div>
+                <div class="row">Disk 1 40c R:99.99 W:99.99</div>
+                <div class="row">Disk 1 40c R:99.99 W:99.99</div>
+                <div class="row">Disk 1 40c R:99.99 W:99.99</div>
+            </div>
+
+            <div class="col border border-secondary">
+                <div class="row border">System Information</div>
+                <div class="row">CPU 0: 20% 40c | CPU 0: 20% 40c</div>
+                <div class="row">CPU 0: 20% 40c | CPU 0: 20% 40c</div>
+                <div class="row">CPU 0: 20% 40c | CPU 0: 20% 40c</div>
+                <div class="row">CPU 0: 20% 40c | CPU 0: 20% 40c</div>
+                <div class="row">RAM: 20%</div>
+            </div> <!-- Just steal the unraid version it works fine-->
+        </div>
+        <div class="row">
+            <div class="col border border-secondary">
+                <div class="row border">Docker Stats</div>
+                <div id="radarr" class="row">Radarr 20% 10%</div>
+                <div class="row">Sonarr 20% 10%</div>
+                <div class="row">NGINX 20% 10%</div>
+                <div class="row">Netdata 20% 10%</div>
+                <div class="row">Lidarr 20% 10%</div>
+                <div class="row">Unpackerr Stats</div>
+            </div> <!-- maybe periodically run the docker stat command for each one-->
+            <div class="col border border-secondary">
+                <div class="row border">QBT Stats: U:999.99 D: 999.99 |Tog </div>
+                <row class="row">1. Incredibles.xx.420.blazeit | U:99.99 D:99.99</row>
+                <row class="row">2. Incredibles.xx.420.blazeit | U:99.99 D:99.99</row>
+                <row class="row">3. Incredibles.xx.420.blazeit | U:99.99 D:99.99</row>
+                <row class="row">4. Incredibles.xx.420.blazeit | U:99.99 D:99.99</row>
+                <row class="row">5. Incredibles.xx.420.blazeit | U:99.99 D:99.99</row>
+            </div>
+            <!-- need to learn the qbittorrent API, but should totally be doable -->
+        </div>
+    </div>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+        crossorigin="anonymous"></script>
+
+    <script>
+
+        function logData(data){
+            console.log(data.json1.data[0][1]);
+            //console.log(data.json2.hostname);
+            //console.log(data.json2.charts);
+        }
+        function updateData(data){
+            document.getElementById("radarr").textContent = `Radarr ${data.json1.data[0][1]} 10%`
+            document.getElementById("hostname").textContent = data.json2.hostname;
+        }
+
+        function fetchJson(endpoint) {
+            return fetch(endpoint)
+                .then(endpointResponse => endpointResponse.json());
+        }
+
+
+        function get() {
+            const apiRoot = 'http://192.168.1.41:19999/api/v1/';
+            const apiInfo = apiRoot + 'info';
+            const apiChartsList = apiRoot + 'charts';
+            const apiChart = apiRoot + 'chart';
+            const apidata = apiRoot + 'data';
+            const systemCPU = apiRoot + 'chart?chart=system.cpu';
+            const RadarrCPU = apiRoot + 'data?chart=netdata.response_time'
+
+            return Promise.all([fetchJson(RadarrCPU), fetchJson(apiChartsList)])
+                .then(responses => {
+                    var data = { json1: responses[0], json2: responses[1] };
+                    //console.log('data in fetch', data); // this logs the json
+                    logData(data);
+                    updateData(data);
+                    return data;
+                });
+        }
+
+
+
+        
+        
+        var intervalId = setInterval(function () {
+            //call api here
+            console.log('looped')
+            get();
+        }, 1000);
+
+
+
+
+
+
+
+
+
+
+
+        // var charts = getAPIJson(apiChartsList);
+        // console.log(charts);
+
+        // // const getCharts = async () => {
+        // //     return await getAPIJson(apiChartsList);
+        // // }
+        // // var charts = getCharts();
+        // // console.log(charts);
+
+        // console.log('Starting loop')
+        // //console.log(getAPIJson(apiChartsList));
+
+
+        // async function getAPIJson(url) {
+        //     var response = await fetch(url);
+        //     if (response.status == 200) {
+        //         return await response.then().json();
+        //     }
+        // }
+
+    </script>
+</body>
+
+</html>
