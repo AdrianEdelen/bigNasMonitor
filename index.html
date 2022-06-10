@@ -68,13 +68,15 @@ entry point -->
     <script>
 
         function logData(data){
-            console.log(data.json1.data[0][1]);
+            console.log(data.radarrCPU.data[0][1]);
+
             //console.log(data.json2.hostname);
             //console.log(data.json2.charts);
         }
         function updateData(data){
-            document.getElementById("radarr").textContent = `Radarr ${data.json1.data[0][1]} 10%`
-            document.getElementById("hostname").textContent = data.json2.hostname;
+            document.getElementById("radarr").textContent = `Radarr ${data.radarrCPU.data[0][1].toFixed(2)}% ${ data.radarrMEM.data[0][1].toFixed(0) /*+ data.radarrMEM.data[0][2].toFixed(0) The problem is its appending not adding hte numbers*/ }MB`
+            //Create a string builder for each of the categories (like docker for example)
+            document.getElementById("hostname").textContent = data.charts.hostname;
         }
 
         function fetchJson(endpoint) {
@@ -91,10 +93,11 @@ entry point -->
             const apidata = apiRoot + 'data';
             const systemCPU = apiRoot + 'chart?chart=system.cpu';
             const RadarrCPU = apiRoot + 'data?chart=netdata.response_time'
+            const RadarrMEM = apiRoot + 'data?chart=cgroup_radarr.mem_usage'
 
-            return Promise.all([fetchJson(RadarrCPU), fetchJson(apiChartsList)])
+            return Promise.all([fetchJson(RadarrCPU), fetchJson(apiChartsList), fetchJson(RadarrMEM)])
                 .then(responses => {
-                    var data = { json1: responses[0], json2: responses[1] };
+                    var data = { radarrCPU: responses[0], charts: responses[1], radarrMEM: responses[2] };
                     //console.log('data in fetch', data); // this logs the json
                     logData(data);
                     updateData(data);
