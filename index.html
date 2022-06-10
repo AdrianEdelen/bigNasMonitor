@@ -67,13 +67,7 @@ entry point -->
 
     <script>
         const apiRoot = 'http://192.168.1.41:19999/api/v1/';
-
-
-        function (){
-
-        }
-
-
+        var dockersObjects = [];
         function logData(data){
             //console.log(data.radarrCPU.data[0][1]);
 
@@ -84,14 +78,14 @@ entry point -->
         function updateData(data){
             document.getElementById("radarr").textContent = `Radarr ${data.radarrCPU.data[0][1].toFixed(2)}% ${ data.radarrMEM.data[0][1].toFixed(0) /*+ data.radarrMEM.data[0][2].toFixed(0) The problem is its appending not adding hte numbers*/ }MB`
             //Create a string builder for each of the categories (like docker for example)
-            document.getElementById("hostname").textContent = data.charts.hostname;
+            document.getElementById("hostname").textContent = data.radarrCPU.hostname;
         }
 
         function fetchJson(endpoint) {
             return fetch(endpoint)
                 .then(endpointResponse => endpointResponse.json());
         }
-
+        
 
         function get() {
             const apiInfo = apiRoot + 'info';
@@ -102,9 +96,9 @@ entry point -->
             const RadarrCPU = apiRoot + 'data?chart=netdata.response_time'
             const RadarrMEM = apiRoot + 'data?chart=cgroup_radarr.mem_usage'
 
-            return Promise.all([fetchJson(RadarrCPU), fetchJson(apiChartsList), fetchJson(RadarrMEM)])
+            return Promise.all([fetchJson(RadarrCPU), fetchJson(RadarrMEM)])
                 .then(responses => {
-                    var data = { radarrCPU: responses[0], charts: responses[1], radarrMEM: responses[2] };
+                    var data = { radarrCPU: responses[0], radarrMEM: responses[1] };
                     //console.log('data in fetch', data); // this logs the json
                     logData(data);
                     updateData(data);
@@ -112,23 +106,69 @@ entry point -->
                 });
         }
 
-        function FindCGroups(){
-            const apiChartsList = apiRoot + 'charts';
-            return Promise.then(response => {
-                
-                console.log(response);
-
+        function getData(endpoint){
+            return Promise.resolve(fetchJson(endpoint)).then(response => {
 
                 return response;
-            })
+            }) 
         }
+
+        function updateDocker(docker){
+            docker.cpu = getData(docker.cpuEndpoint);
+            docker.mem = getData(docker.memEndpoint);
+        }
+
+        function FindCGroups(){
+            const apiChartsList = apiRoot + 'charts';
+            return Promise.resolve(fetchJson(apiChartsList)).then(response => {
+                var chartsList = response.charts;
+                //console.log(response);
+                
+                console.log(chartsList)
+
+                var keys = Object.keys(chartsList);
+
+                var trimmedKeys = [];
+
+                keys.forEach(element => {
+                    trimmedKeys.push(element.split(".")[0])
+                });
+
+                trimmedKeys = Array.from(new Set(trimmedKeys));
+                console.log(trimmedKeys);
+
+                //so for each docker, i think I need to make some type of object that gets the main stats for each and then create a dynamic list of each docker sorted by cpu/ram usage
+                var dockers = trimmedKeys.filter(item => item.includes("cgroup"));
+                dockers.forEach(docker => {
+                    dockersObjects.push({
+                        name: docker,
+                        cpuEndpoint: apiRoot + 'data?chart=' + docker + '.cpu',
+                        memEndpoint: apiRoot + 'data?chart=' + docker + '.mem_usage',
+                        cpu: -1,
+                        mem: -1
+
+                    })
+                })
+
+                var radarr = keys.filter(item => item.includes("radarr"));
+
+                console.log(keys);
+                console.log(dockers);                
+                return response;
+            });
+        }
+        FindCGroups();
 
         
         
         var intervalId = setInterval(function () {
             //call api here
             console.log('looped')
-            get();
+            dockersObjects.forEach(docker => {
+                updateDocker(docker);
+                console.log(docker);
+            })
+            console.log(dockersObjects);
         }, 1000);
 
 
