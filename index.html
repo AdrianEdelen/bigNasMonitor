@@ -66,12 +66,20 @@ entry point -->
         crossorigin="anonymous"></script>
 
     <script>
+        const apiRoot = 'http://192.168.1.41:19999/api/v1/';
+
+
+        function (){
+
+        }
+
 
         function logData(data){
-            console.log(data.radarrCPU.data[0][1]);
+            //console.log(data.radarrCPU.data[0][1]);
 
             //console.log(data.json2.hostname);
             //console.log(data.json2.charts);
+            return;
         }
         function updateData(data){
             document.getElementById("radarr").textContent = `Radarr ${data.radarrCPU.data[0][1].toFixed(2)}% ${ data.radarrMEM.data[0][1].toFixed(0) /*+ data.radarrMEM.data[0][2].toFixed(0) The problem is its appending not adding hte numbers*/ }MB`
@@ -86,9 +94,8 @@ entry point -->
 
 
         function get() {
-            const apiRoot = 'http://192.168.1.41:19999/api/v1/';
             const apiInfo = apiRoot + 'info';
-            const apiChartsList = apiRoot + 'charts';
+            
             const apiChart = apiRoot + 'chart';
             const apidata = apiRoot + 'data';
             const systemCPU = apiRoot + 'chart?chart=system.cpu';
@@ -105,7 +112,16 @@ entry point -->
                 });
         }
 
+        function FindCGroups(){
+            const apiChartsList = apiRoot + 'charts';
+            return Promise.then(response => {
+                
+                console.log(response);
 
+
+                return response;
+            })
+        }
 
         
         
