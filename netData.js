@@ -8,66 +8,42 @@ function containsOject(obj, list) {
     }
     return false;
 }
-function fetchJson(endpoint) {
-    return fetch(endpoint)
-        .then(endpointResponse => endpointResponse.json());
-}
 
+//intent: Get updated information periodically and update the page
+
+//create one of these and then have a 'update data' function that continously updates the page
 class netData {
     constructor() {
         this.apiRoot = 'http://192.168.1.41:19999/api/v1/';
         this.chartsList;
         this.dockerInfos = [];
     }
-    logger(data) {
-        console.log(data);
-    }
+
+
+    //would be called to actually generate specific htm tags (not implemented)
     updateData(data) {
+        //not used currently
         document.getElementById("radarr").textContent = `Radarr ${data.radarrCPU.data[0][1].toFixed(2)}% ${data.radarrMEM.data[0][1].toFixed(0) /*+ data.radarrMEM.data[0][2].toFixed(0) The problem is its appending not adding hte numbers*/}MB`
         //Create a string builder for each of the categories (like docker for example)
         document.getElementById("hostname").textContent = data.radarrCPU.hostname;
     }
    
-
-    // async getFile() {
-    //     let myPromise = new Promise(function(resolve) {
-    //       let req = new XMLHttpRequest();
-    //       req.open('GET', "mycar.html");
-    //       req.onload = function() {
-    //         if (req.status == 200) {
-    //           resolve(req.response);
-    //         } else {
-    //           resolve("File not Found");
-    //         }
-    //       };
-    //       req.send();
-    //     });
-    //     document.getElementById("demo").innerHTML = await myPromise;
-    //   }
-      
-    //   getFile();
-
-
-
+    //gets a list of all available data sets from netdata (netdata keeps them in the form of charts)
+    //we would use this to establish what modules are available (e.g. what dockers are running)
     async getAllCharts() {
         const apiChartsList = this.apiRoot + 'charts';
         fetch(apiChartsList).then(endpointResponse => {
             this.chartsList = endpointResponse.json();
             console.log(this.chartsList);
         });
-
-
-        // let chartPromise = new Promise(function(resolve) {
-        //     let result = fetchJson(apiChartsList);
-        //     Promise.resolve(result);
-        // });
-        // this.chartsList = await chartPromise;        
-        // await new Promise(this.fetchJson(apiChartsList)).then(response => {
-        //     this.chartsList = response.charts;
-    
     }
 
+    //docker containers are referenced as cgroups in linux and therefore netdata. 
+    //typically the cgroup will be in a form like 'cgroup_redis.mem_usage'
+    //there may be ten or more specific charts for each cgroup, so in order to have a clean list of unique running containers, we use
+    //this function to get and create 'docker objects' for each running and available container.
     getDockers() {
+        
         var keys = Object.keys(this.chartsList);
         //take the list of charts and filter them down to unique charts that contain 'cgroup'
         var trimmedKeys = [];
@@ -83,20 +59,9 @@ class netData {
             }
         })
     }
-
-    get() {
-        return Promise.all([fetchJson(RadarrCPU), fetchJson(RadarrMEM)])
-            .then(responses => {
-                var data = { radarrCPU: responses[0], radarrMEM: responses[1] };
-                //console.log('data in fetch', data); // this logs the json
-                this.logData(data);
-                this.updateData(data);
-                return data;
-            });
-    }
-
 }
 
+//we would call the specific api endpoint for cpu usage etc for each docker here to update the page
 class dockerInfo {
     constructor(name) {
         this.name = name;
@@ -108,6 +73,7 @@ class dockerInfo {
     }
 
 }
+
 
 class hostName {
     constructor(apiRoot) {
@@ -122,7 +88,7 @@ class hostName {
 }
 
 
-
+//testing
 var nd = new netData();
 nd.getAllCharts();
 
