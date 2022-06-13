@@ -19,6 +19,7 @@ Disks
     Available Space
 
 CPU cores
+    package temp maybe with a nice chart.js or something
     Usage
     Temp
 
