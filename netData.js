@@ -1,3 +1,18 @@
+"use strict";
+
+function containsOject(obj, list) {
+    for (var i = 0; i < list.length; i++) {
+        if (list[i] === obj) {
+            return true;
+        }
+    }
+    return false;
+}
+function fetchJson(endpoint) {
+    return fetch(endpoint)
+        .then(endpointResponse => endpointResponse.json());
+}
+
 class netData {
     constructor() {
         this.apiRoot = 'http://192.168.1.41:19999/api/v1/';
@@ -12,14 +27,44 @@ class netData {
         //Create a string builder for each of the categories (like docker for example)
         document.getElementById("hostname").textContent = data.radarrCPU.hostname;
     }
-    fetchJson(endpoint) {
-        return fetch(endpoint)
-            .then(endpointResponse => endpointResponse.json());
-    }
-    getAllCharts() {
-        Promise.resolve(fetchJson(apiChartsList)).then(response => {
-            this.chartsList = chartsList = response.charts;
-        })
+   
+
+    // async getFile() {
+    //     let myPromise = new Promise(function(resolve) {
+    //       let req = new XMLHttpRequest();
+    //       req.open('GET', "mycar.html");
+    //       req.onload = function() {
+    //         if (req.status == 200) {
+    //           resolve(req.response);
+    //         } else {
+    //           resolve("File not Found");
+    //         }
+    //       };
+    //       req.send();
+    //     });
+    //     document.getElementById("demo").innerHTML = await myPromise;
+    //   }
+      
+    //   getFile();
+
+
+
+    async getAllCharts() {
+        const apiChartsList = this.apiRoot + 'charts';
+        fetch(apiChartsList).then(endpointResponse => {
+            this.chartsList = endpointResponse.json();
+            console.log(this.chartsList);
+        });
+
+
+        // let chartPromise = new Promise(function(resolve) {
+        //     let result = fetchJson(apiChartsList);
+        //     Promise.resolve(result);
+        // });
+        // this.chartsList = await chartPromise;        
+        // await new Promise(this.fetchJson(apiChartsList)).then(response => {
+        //     this.chartsList = response.charts;
+    
     }
 
     getDockers() {
@@ -30,7 +75,13 @@ class netData {
             trimmedKeys.push(element.split(".")[0]) //remove the specific parameter (e.g. cpu usage)
         });
         trimmedKeys = Array.from(new Set(trimmedKeys)); //remove all duplicates
-        var dockers = trimmedKeys.filter(item => item.includes("cgroup"));
+        var dockers = trimmedKeys.filter(item => item.includes("cgroup")); //add back the 
+        dockers.forEach( docker => {
+            var dockInfo = new dockerInfo(docker);
+            if (!containsOject(dockInfo, dockers)){
+                this.dockerInfos.push(new dockerInfo(docker));
+            }
+        })
     }
 
     get() {
@@ -69,3 +120,11 @@ class hostName {
         })
     }
 }
+
+
+
+var nd = new netData();
+nd.getAllCharts();
+
+
+
