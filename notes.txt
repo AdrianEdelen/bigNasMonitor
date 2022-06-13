@@ -7,11 +7,13 @@ header
     total bandwitch upload/download (should be able to get this from netdata)
 
 Running docker containers 
+    sorted by usage (either ram or cpu not sure yet)
     Cpu Usage
     Mem Usage
     Alarms/messages from containers
 
 Disks
+    sorted by type, first cache, then regular disks, then, parity
     Reads
     Writes
     Available Space
@@ -33,3 +35,17 @@ netdata
 QBittorrent
 
 additionally there is some info that I am not sure is available from netData (disk health)
+
+
+info will be updated on a time basis (1 sec or 5 seconds or something)
+in that time, get all the new info, and prepare it for updating
+
+update all parameters at once (unless its better to just update stuff as it happens.)
+
+things that I think can be abstracted/genericized -
+netdata api call - these should all be very similar, same root.
+building of html for dockers - all of these are the same format
+disks - same as the dockers (though there may be special cases for the cache and parity)
+
+main Goal - figure out how the promise/event loop of js works and do it right.
+
