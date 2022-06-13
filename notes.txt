@@ -1,0 +1,35 @@
+API endpoints/ data to get from netdata
+
+header
+    Hostname / img
+    total disks and active/not active - something like a green dot for active, gray for inactive
+    disk health (smart stats maybe or something else, not sure)
+    total bandwitch upload/download (should be able to get this from netdata)
+
+Running docker containers 
+    Cpu Usage
+    Mem Usage
+    Alarms/messages from containers
+
+Disks
+    Reads
+    Writes
+    Available Space
+
+CPU cores
+    Usage
+    Temp
+
+QBittorrent stats
+I don' think this info is available via netdata, but qBittorrnt should have its own API 
+    total Upload
+    total download
+    info about current top N torrents
+        Upload
+
+
+overall there are 2 main apis to interact with
+netdata
+QBittorrent
+
+additionally there is some info that I am not sure is available from netData (disk health)
