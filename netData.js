@@ -61,6 +61,9 @@ class netData {
     }
 }
 
+async function fetchData(endpoint) {
+    fetch(endpoint).then(response => {return response;})
+}
 //we would call the specific api endpoint for cpu usage etc for each docker here to update the page
 class dockerInfo {
     constructor(name) {
