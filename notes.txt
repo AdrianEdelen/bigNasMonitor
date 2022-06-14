@@ -50,3 +50,8 @@ disks - same as the dockers (though there may be special cases for the cache and
 
 main Goal - figure out how the promise/event loop of js works and do it right.
 
+
+
+Features to add:
+    Ability to custom name disks (would have to be by hand)
+    

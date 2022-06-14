@@ -1,15 +1,15 @@
 //'http://192.168.1.41:19999/api/v1/'
 //charts
-var apiService = function(baseAddress) {
+var apiService = function (baseAddress) {
     var self = this;
     self.BaseAddress = baseAddress;
 
-    self.Get = function(endpoint) {
+    self.Get = function (endpoint) {
         var endpoint = `${self.BaseAddress}/${endpoint}`;
         return $.get(endpoint);
     }
 
-    self.GetMem = function(cgroup){
+    self.GetDockerMem = function (cgroup) {
         var endpoint = `${self.BaseAddress}/data?chart=${cgroup}.mem_usage`;
         return $.get(endpoint);
         // $.ajax({
@@ -21,62 +21,184 @@ var apiService = function(baseAddress) {
         //     }
         // })
     }
+    self.GetDockerCpu = function (cgroup) {
+        var endpoint = `${self.BaseAddress}/data?chart=${cgroup}.cpu_limit`;
+        return $.get(endpoint);
+    }
+
+    self.GetDiskReadWrite = function (disk) {
+        var endpoint = `${self.BaseAddress}/data?chart=${disk}`;
+        return $.get(endpoint);
+    }
+
+    self.GetCpuUsage = function (cpu) {
+        var endpoint = `${self.BaseAddress}/data?chart=${cpu}`;
+        return $.get(endpoint);
+    }
 }
 
-var dashboard = function(){
+var dashboard = function () {
     var self = this;
     self.ApiService = new apiService('http://192.168.1.41:19999/api/v1');
 
-    self.Init = function() {
+    self.Init = function () {
         self.GetCharts();
+        self.GetDisks();
+        self.GetCpus();
 
-        self.Charts.subscribe(function(charts) {
+        self.Charts.subscribe(function (charts) {
             console.log("getting charts");
-            setInterval(self.GetMems, 1000);
-            // self.GetMems();
+            setInterval(() => {
+                self.GetDockerMems();
+                self.GetDockerCpus();
+            }, 1000);
+        });
+
+        self.Disks.subscribe(function (disks) {
+            setInterval(() => {
+                self.GetDiskReadWrites();
+            }, 1000);
+        });
+
+        self.Cpus.subscribe(function (cpus) {
+            setInterval(() => {
+                self.GetCpuUsages();
+            }, 1000);
         })
     }
 
-    self.Charts = ko.observableArray();    
-
-    self.GetCharts = function() {
+    self.Charts = ko.observableArray();
+    self.Disks = ko.observableArray();
+    self.Cpus = ko.observableArray();
+    /* Get main group items 
+    Charts = dockers
+    Disks = harddrives*/
+    self.GetCharts = function () {
         self.ApiService.Get('charts').then((fetchedJson) => {
-            var cgroups = Object.keys(fetchedJson.charts).filter(c => c.indexOf('cgroup') > -1).map(c => c.split('.')[0]);             
+            var cgroups = Object.keys(fetchedJson.charts).filter(c => c.includes('cgroup')).map(c => c.split('.')[0]);
             var cgroupSet = new Set(cgroups);
+            cgroupSet.delete('disk_space');
+            cgroupSet.delete('netdata');
+            cgroupSet.delete('disk_inodes');
             var cgroupListItems = Array.from(cgroupSet).map(cgroup => new listItem(cgroup, null));
             self.Charts(cgroupListItems);
         });
     }
 
-    self.GetMems = function() {
-        for(const li of self.Charts()) {
-            self.ApiService.GetMem(li.Text()).then(info => li.Value(info.data[0][0]));
+    self.GetDockerMems = function () {
+        for (const li of self.Charts()) {
+            self.ApiService.GetDockerMem(li.Text()).then(info => {
+                var dataList = info.data.slice(0, 100);
+                var total = 0;
+                dataList.forEach(element => {
+                    total += parseFloat(element[1]);
+                });
+                var average = (total / dataList.length).toFixed(2);
+                li.Ram(average);
+            });
         }
     }
 
-    self.GetInfo = async function() {
-        return 10;
-    }   
+    self.GetDockerCpus = function () {
+        for (const li of self.Charts()) {
+            self.ApiService.GetDockerCpu(li.Text()).then(info => {
+                var dataList = info.data.slice(0, 100);
+                var total = 0;
+                dataList.forEach(element => {
+                    total += parseFloat(element[1]);
+                });
+                var average = (total / dataList.length).toFixed(2);
+                li.Cpu(average);
+            })
+        }
+    }
+
+
+    /* hard drives*/
+    self.GetDisks = function () {
+        self.ApiService.Get('charts').then((fetchedJson) => {
+            var disks = Object.keys(fetchedJson.charts).filter(c => c.includes('disk.sd'));
+            //console.log(disks);
+            var diskListItems = Array.from(disks).map(disk => new diskItem(disk, null, null));
+            self.Disks(diskListItems);
+        })
+    }
+
+    self.GetDiskReadWrites = function () {
+        for (const di of self.Disks()) {
+            self.ApiService.GetDiskReadWrite(di.Text()).then(info => {
+
+                var dataList = info.data.slice(0, 100);
+                var totalReads = 0;
+                var totalWrites = 0;
+                dataList.forEach(element => {
+                    totalReads += parseFloat(element[1]);
+                    totalWrites += parseFloat(element[2]);
+                });
+                var averageReads = (totalReads / dataList.length).toFixed(2);
+                var averageWrites = (totalWrites / dataList.length).toFixed(2);
+                di.Read((averageReads / 1024).toFixed(2));
+                di.Write(((averageWrites * -1) / 1024).toFixed(2));
+            })
+
+        }
+    }
+
+    //cpus
+    self.GetCpus = function () {
+        self.ApiService.Get('charts').then((fetchedJson) => {
+            var cpus = new Set(Object.keys(fetchedJson.charts).filter(c => c.includes('cpu.cpu')).map(c => c.split("_")[0]));
+            cpus.delete('cpu.cpufreq');
+            var cpuItems = Array.from(cpus).map(text => new cpuItem(text, null, null));
+            self.Cpus(cpuItems)
+        })
+    }
+
+    self.GetCpuUsages = function () {
+        for (const ci of self.Cpus()) {
+            self.ApiService.GetCpuUsage(ci.Text()).then(info => {
+                var dataList = info.data.slice(0,100);
+                var totals = 0;
+                dataList.forEach(element => {
+                    var sum = 0;
+                    element.forEach((element1, i) => {
+                        if (i === 0) return;
+                        sum += element1;
+                    })
+                    totals += sum;
+                });
+                var average = (totals / dataList.length).toFixed(2);
+                ci.Usage(average);
+            })
+
+        }
+    }
+
 
 }
 
-var listItem = function(text, val) {
+var listItem = function (text, ram, val, cpu) {
     var self = this;
+    self.Name = ko.observable(text.split("_")[1])
     self.Text = ko.observable(text);
+    self.Ram = ko.observable(ram);
+    self.Cpu = ko.observable(cpu);
     self.Value = ko.observable(val);
 }
 
-function getDockers(charts) {
-    var keys = Object.keys(charts['charts']);
-    //take the list of charts and filter them down to unique charts that contain 'cgroup'
-    var trimmedKeys = [];
-    keys.forEach(element => {
-        trimmedKeys.push(element.split(".")[0]) //remove the specific parameter (e.g. cpu usage)
-    });
-    trimmedKeys = Array.from(new Set(trimmedKeys)); //remove all duplicates
-    var dockers = trimmedKeys.filter(item => item.includes("cgroup")); //add back the 
-    //dockers is a list of unique keys that contain cgroup
-    // dockers.forEach( docker => {
-        
-    // })
+var diskItem = function (disk, read, write) {
+    var self = this;
+    self.Text = ko.observable(disk);
+    self.Name = ko.observable(disk.split(".")[1]);
+    self.Read = ko.observable(read);
+    self.Write = ko.observable(write);
+}
+
+var cpuItem = function (text, usage, temp) {
+    var self = this;
+    self.Text = ko.observable(text);
+    self.Name = ko.observable(text.split('.')[1]);
+    self.Usage = ko.observable(usage);
+    self.Temp = ko.observable(temp);
+
 }
