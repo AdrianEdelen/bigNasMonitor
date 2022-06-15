@@ -11,28 +11,47 @@
 </head>
 
 <body>
-    <div id="config-root">
-        <div class="row">
-            <hr>
-            <hr>
+    <div class="container-fluid" id="config-root">
+        <div class="row border border-secondary rounded">
+            <div id="hostname" class="col">hostname</div> 
+            <div class="col">Online</div> 
+            <div class="col">Disk Health 0 0 0 0 0 0 </div> 
+            <div class="col">U:999.99mb/s D:999.99mb/s</div> <!-- MB or mbits-->
         </div>
         <div class="row">
-            <div class="col" data-bind="foreach: Disks">
+            <div class="col border" data-bind="foreach: Disks">
                 Disk: <span data-bind="text: Name"></span> Reads: <span data-bind="text: Read"></span> Writes: <span
                     data-bind="text: Write"></span> <br>
             </div>
-            <div class="col" data-bind="foreach: Cpus">
+
+            <div class="col border" >
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">CPU</th>
+                            <th scope="col">Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: GroupedCpus">
+                        <tr data-bind="foreach: $data">
+                            <td data-bind="text: Name"></td>
+                            <td data-bind="text: Usage"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col border" data-bind="foreach: Cpus">
                 <span data-bind="text: Name"></span> Usage: <span data-bind="text: Usage"></span><br>
             </div>
         </div>
         
-        <hr>
-        <div class="row">
-            <div class="col" data-bind="foreach: Charts">
+        <div class="row ">
+            <div class="col border" data-bind="foreach: Charts">
                 <span data-bind="text: Name"></span>: CPU:<span data-bind="text: Cpu"></span> RAM:<span
                     data-bind="text: Ram"> </span></br>
             </div>
-            <div class="col">
+            <div class="col border">
                 a
             </div>
         </div>

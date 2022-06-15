@@ -10,15 +10,14 @@
     <script src="netData.js"></script>
 </head>
 
-<!-- I think ALL of the data can be gotten from the netdata API. Which should make this very simple with a single
-entry point -->
+
 
 <body>
     <div class="container-fluid">
         <div class="row border border-secondary rounded">
-            <div id="hostname" class="col">hostname</div> <!-- Configurable can also be hidden to make room for more disks-->
-            <div class="col">Online</div> <!-- Configurable for text or just an Icon-->
-            <div class="col">Disk Health 0 0 0 0 0 0 </div> <!-- This will probably generate a column for each disk-->
+            <div id="hostname" class="col">hostname</div> 
+            <div class="col">Online</div> 
+            <div class="col">Disk Health 0 0 0 0 0 0 </div> 
             <div class="col">U:999.99mb/s D:999.99mb/s</div> <!-- MB or mbits-->
         </div>
         <div class="row border border-secondary">
@@ -65,113 +64,5 @@ entry point -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
         crossorigin="anonymous"></script>
-
-    <!-- <script>
-       
-        
-        
-
-      
-        
-
-       
-
-        function getData(endpoint){
-            return Promise.resolve(fetchJson(endpoint)).then(response => {
-
-                return response;
-            }) 
-        }
-
-        function updateDocker(docker){
-            docker.cpu = getData(docker.cpuEndpoint);
-            docker.mem = getData(docker.memEndpoint);
-        }
-
-        function FindCGroups(){
-            const apiChartsList = apiRoot + 'charts';
-            return Promise.resolve(fetchJson(apiChartsList)).then(response => {
-                var chartsList = response.charts;
-                //console.log(response);
-                
-                console.log(chartsList)
-
-                var keys = Object.keys(chartsList);
-
-                var trimmedKeys = [];
-
-                keys.forEach(element => {
-                    trimmedKeys.push(element.split(".")[0])
-                });
-
-                trimmedKeys = Array.from(new Set(trimmedKeys));
-                console.log(trimmedKeys);
-
-                //so for each docker, i think I need to make some type of object that gets the main stats for each and then create a dynamic list of each docker sorted by cpu/ram usage
-                var dockers = trimmedKeys.filter(item => item.includes("cgroup"));
-                dockers.forEach(docker => {
-                    dockersObjects.push({
-                        name: docker,
-                        cpuEndpoint: apiRoot + 'data?chart=' + docker + '.cpu',
-                        memEndpoint: apiRoot + 'data?chart=' + docker + '.mem_usage',
-                        cpu: -1,
-                        mem: -1
-
-                    })
-                })
-
-                var radarr = keys.filter(item => item.includes("radarr"));
-
-                console.log(keys);
-                console.log(dockers);                
-                return response;
-            });
-        }
-        FindCGroups();
-
-        
-        
-        var intervalId = setInterval(function () {
-            //call api here
-            console.log('looped')
-            dockersObjects.forEach(docker => {
-                updateDocker(docker);
-                //console.log(docker);
-            })
-            console.log(dockersObjects);
-        }, 1000);
-
-
-
-
-
-
-
-
-
-
-
-        // var charts = getAPIJson(apiChartsList);
-        // console.log(charts);
-
-        // // const getCharts = async () => {
-        // //     return await getAPIJson(apiChartsList);
-        // // }
-        // // var charts = getCharts();
-        // // console.log(charts);
-
-        // console.log('Starting loop')
-        // //console.log(getAPIJson(apiChartsList));
-
-
-        // async function getAPIJson(url) {
-        //     var response = await fetch(url);
-        //     if (response.status == 200) {
-        //         return await response.then().json();
-        //     }
-        // }
-
-    </script> -->
 </body>
-
 </html>

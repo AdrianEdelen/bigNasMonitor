@@ -21,6 +21,7 @@ var apiService = function (baseAddress) {
         //     }
         // })
     }
+    
     self.GetDockerCpu = function (cgroup) {
         var endpoint = `${self.BaseAddress}/data?chart=${cgroup}.cpu_limit`;
         return $.get(endpoint);
@@ -35,6 +36,12 @@ var apiService = function (baseAddress) {
         var endpoint = `${self.BaseAddress}/data?chart=${cpu}`;
         return $.get(endpoint);
     }
+
+    self.getSensorTemps = function (sensor) {
+        var endpoint = `${self.BaseAddress}/data?chart=${sensor}`;
+        return $.get(endpoint);
+    }
+
 }
 
 var dashboard = function () {
@@ -45,6 +52,7 @@ var dashboard = function () {
         self.GetCharts();
         self.GetDisks();
         self.GetCpus();
+        self.GetSensors();
 
         self.Charts.subscribe(function (charts) {
             console.log("getting charts");
@@ -64,16 +72,35 @@ var dashboard = function () {
             setInterval(() => {
                 self.GetCpuUsages();
             }, 1000);
-        })
+        });
+
+        self.Sensors.subscribe(function (sensors) {
+            setInterval(() => {
+                self.getSensorTemps();
+            }, 1000);
+        });
+        
     }
 
     self.Charts = ko.observableArray();
     self.Disks = ko.observableArray();
     self.Cpus = ko.observableArray();
+    self.GroupedCpus = ko.computed(function () {
+        var rows = [];
+        self.Cpus.forEach(function (cpu, i) {
+            if (i % 2 == 0) {
+                rows[i/2] = [];
+            }
+            rows[Math.floor(i/2)][i%2] = cpu;
+        }) ;
+        return rows;
+    });
+
+    self.Sensors = ko.observableArray();
     /* Get main group items 
     Charts = dockers
     Disks = harddrives*/
-    self.GetCharts = function () {
+    self.GetCharts = () => {
         self.ApiService.Get('charts').then((fetchedJson) => {
             var cgroups = Object.keys(fetchedJson.charts).filter(c => c.includes('cgroup')).map(c => c.split('.')[0]);
             var cgroupSet = new Set(cgroups);
@@ -85,7 +112,7 @@ var dashboard = function () {
         });
     }
 
-    self.GetDockerMems = function () {
+    self.GetDockerMems = () => {
         for (const li of self.Charts()) {
             self.ApiService.GetDockerMem(li.Text()).then(info => {
                 var dataList = info.data.slice(0, 100);
@@ -99,7 +126,7 @@ var dashboard = function () {
         }
     }
 
-    self.GetDockerCpus = function () {
+    self.GetDockerCpus = () => {
         for (const li of self.Charts()) {
             self.ApiService.GetDockerCpu(li.Text()).then(info => {
                 var dataList = info.data.slice(0, 100);
@@ -115,7 +142,7 @@ var dashboard = function () {
 
 
     /* hard drives*/
-    self.GetDisks = function () {
+    self.GetDisks = () => {
         self.ApiService.Get('charts').then((fetchedJson) => {
             var disks = Object.keys(fetchedJson.charts).filter(c => c.includes('disk.sd'));
             //console.log(disks);
@@ -124,7 +151,7 @@ var dashboard = function () {
         })
     }
 
-    self.GetDiskReadWrites = function () {
+    self.GetDiskReadWrites = () => {
         for (const di of self.Disks()) {
             self.ApiService.GetDiskReadWrite(di.Text()).then(info => {
 
@@ -145,19 +172,19 @@ var dashboard = function () {
     }
 
     //cpus
-    self.GetCpus = function () {
+    self.GetCpus = () => {
         self.ApiService.Get('charts').then((fetchedJson) => {
             var cpus = new Set(Object.keys(fetchedJson.charts).filter(c => c.includes('cpu.cpu')).map(c => c.split("_")[0]));
             cpus.delete('cpu.cpufreq');
             var cpuItems = Array.from(cpus).map(text => new cpuItem(text, null, null));
-            self.Cpus(cpuItems)
+            self.Cpus(cpuItems);
         })
     }
 
-    self.GetCpuUsages = function () {
+    self.GetCpuUsages = () => {
         for (const ci of self.Cpus()) {
             self.ApiService.GetCpuUsage(ci.Text()).then(info => {
-                var dataList = info.data.slice(0,100);
+                var dataList = info.data.slice(0, 100);
                 var totals = 0;
                 dataList.forEach(element => {
                     var sum = 0;
@@ -171,6 +198,29 @@ var dashboard = function () {
                 ci.Usage(average);
             })
 
+        }
+    }
+    //temp sensors
+    self.GetSensors = () => {
+        self.ApiService.Get('charts').then((fetchedJson) => {
+            var sensors = new Set(Object.keys(fetchedJson.charts).filter(c => c.includes('sensors.coretemp')));
+            var sensorItems = Array.from(sensors).map(text => new sensorItem(text));
+            self.Sensors(sensorItems);
+        })
+    }
+    //not implemented yet
+    self.getSensorTemps = () => {
+        for (const si of self.Sensors()) {
+            self.ApiService.getSensorTemps(si.Text()).then(info => {
+                var dataList = info.data.slice(0,100);
+                //console.log(dataList);
+                dataList.forEach((element, i) => {
+                    if (i === 0 ) return;
+
+                });
+                
+                //var cpuCore = new cpuCoreTemp(info.labels[i]);
+            })
         }
     }
 
@@ -201,4 +251,17 @@ var cpuItem = function (text, usage, temp) {
     self.Usage = ko.observable(usage);
     self.Temp = ko.observable(temp);
 
+}
+
+var sensorItem = function (text, core, temp) {
+    var self = this;
+    self.Text = ko.observable(text);
+    self.Core = ko.observable(core);
+    self.Temp = ko.observable(temp);
+}
+
+var cpuCoreTemp = function (core, temp) {
+    var self = this;
+    self.Core = core;
+    self.Temp = temp;
 }
